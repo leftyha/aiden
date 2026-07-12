@@ -55,7 +55,7 @@ function injectCinematicMarkup() {
         <span class="eyebrow">La selva está lista</span>
         <h2>Mi primer rugido</h2>
         <p>Acompáñanos a celebrar su primera vuelta al sol.</p>
-        <div class="ultimate-date"><strong>26</strong><span>agosto<br>2026</span></div>
+        <div class="ultimate-date"><strong>04</strong><span>octubre<br>2026</span></div>
       </div>
 
       <div class="ultimate-audio-status" aria-hidden="true">
@@ -320,7 +320,9 @@ function bindControls() {
 
   startButton?.addEventListener('click', startExperience, { capture: true });
 
-  soundToggle?.addEventListener('click', () => {
+  soundToggle?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
     muted = !muted;
     if (dialogue) dialogue.muted = muted;
     if (music) music.muted = muted;
