@@ -1,3 +1,5 @@
+import './autoplay.js';
+
 const assetMap = new Map([
   ['/assets/backgrounds/dawn.webp', '/dia.png'],
   ['/assets/backgrounds/clearing.webp', '/selva.png'],
