@@ -1,347 +1,344 @@
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { DIALOGUE_DURATION, getDialogueUrl, releaseDialogueUrl } from './audio/dialogue.js';
 
-gsap.registerPlugin(ScrollTrigger);
+const MUSIC_URL = new URL('../Golden Lion Wishes.mp3', import.meta.url).href;
+const $ = (selector, root = document) => root.querySelector(selector);
 
-const sceneOrder = [
-  ['dawn', 'En un lugar muy cálido de Colombia, en la ciudad de Cúcuta, un bebé venía en camino. Su llegada había sido planeada con muchísimo amor, ilusión y ternura, junto a esos nervios que aparecen cuando una vida está a punto de cambiarlo todo.', 15000],
-  ['waiting', 'Había amor, esperanza y calma. Y muchos nervios también. Porque no estaba por llegar solo un bebé. Estaba por comenzar una nueva aventura.', 12000],
-  ['arrival', 'Y entonces, a las tres de la tarde, llegó él. Aiden Leonardo Mora Molero. Pequeño, curioso y con una mirada capaz de descubrirlo todo.', 12000],
-  ['night', 'Desde sus primeros días, Aiden dejó claro que tendría su propia forma de descubrir el mundo. Incluso para descansar, siempre ha tenido su propio ritmo.', 12000],
-  ['pack', 'Muy pronto, Aiden encontró su lugar dentro de una manada muy especial. Cuatro perritos se convirtieron en compañeros, guardianes y cómplices de sus primeros descubrimientos.', 12500],
-  ['personality', 'Aiden es curioso, alegre y lleno de vida. Le gusta morder, conversar de noche, el tomate, la cebolla, comer con papá y dormir muy cerca de mamá.', 13000],
-  ['steps', 'Hoy ya sabe ponerse de pie. Cada día avanza un poco más. Falta muy poco para que comience a correr por toda la casa.', 12000],
-  ['fire', 'Aiden es ternura, curiosidad y alegría. Un pequeño fuego ardiente, con la fuerza de un león.', 10500],
-  ['awakening', 'Después de casi doce meses de aventuras, aprendizajes, risas y amor, nuestro pequeño león está preparado para celebrar.', 11500],
-  ['invitation', 'Por eso, en este día tan especial, Aiden quiere invitarte a celebrar su primer cumpleaños y acompañarlo cuando dé su primer gran rugido.', 13000],
-  ['gallery', 'Detrás de cada ilustración está la historia real de Aiden. Un primer año lleno de miradas curiosas, paseos, abrazos, aprendizajes y momentos para conservar siempre.', 16000],
-  ['letter', 'Hoy celebramos todo lo que eres y todo lo que apenas estás comenzando a ser. Este será apenas el primero de muchos rugidos.', 13500],
-  ['details', 'Ahora que conoces un poco más de su historia, queremos invitarte a formar parte de este capítulo tan especial.', 12000],
-  ['ending', 'Hace casi doce meses, una pequeña luz estaba por llegar. Hoy esa luz ilumina toda nuestra manada. Su historia apenas comienza.', 11500],
-  ['closing', 'Te esperamos para celebrar la primera vuelta al sol de nuestro pequeño león, Aiden Leonardo Mora Molero.', 12000],
-];
+let dialogue = null;
+let music = null;
+let cinematicTimeline = null;
+let animationFrame = 0;
+let started = false;
+let muted = false;
 
-let stopped = false;
-let currentUtterance = null;
-let ambienceContext = null;
-let ambienceGain = null;
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function injectIntroMarkup() {
-  const scene = document.querySelector('[data-scene="candle"]');
+function injectCinematicMarkup() {
+  const scene = $('[data-scene="candle"]');
   if (!scene) return;
 
   scene.innerHTML = `
-    <div class="intro-depth" aria-hidden="true">
-      <div class="intro-bg intro-bg--far"></div>
-      <div class="intro-bg intro-bg--mid"></div>
-      <div class="intro-smoke intro-smoke--back"></div>
-      <div class="intro-smoke intro-smoke--front"></div>
-      <div class="intro-vignette"></div>
-      <div class="intro-particles intro-particles--back"></div>
-      <div class="intro-particles intro-particles--front"></div>
-    </div>
-    <div class="candle-stage" aria-hidden="true">
-      <div class="candle-shadow"></div>
-      <div class="candle-premium">
-        <span class="wax-rim"></span>
-        <span class="wax-drip wax-drip--one"></span>
-        <span class="wax-drip wax-drip--two"></span>
-        <span class="wick-premium"></span>
-        <span class="spark spark--one"></span>
-        <span class="spark spark--two"></span>
-        <span class="flame-premium"><i></i></span>
-        <span class="flame-aura"></span>
+    <div class="ultimate-cinema" aria-live="polite">
+      <div class="ultimate-layer ultimate-layer--night"></div>
+      <div class="ultimate-layer ultimate-layer--dawn"></div>
+      <div class="ultimate-layer ultimate-layer--jungle"></div>
+      <div class="ultimate-layer ultimate-layer--party"></div>
+      <div class="ultimate-vignette"></div>
+      <div class="ultimate-rays"></div>
+      <div class="ultimate-embers" aria-hidden="true"></div>
+
+      <div class="ultimate-candle" aria-hidden="true">
+        <div class="ultimate-candle__aura"></div>
+        <div class="ultimate-candle__flame"><i></i></div>
+        <div class="ultimate-candle__wick"></div>
+        <div class="ultimate-candle__wax"><i></i><b></b></div>
+        <div class="ultimate-candle__shadow"></div>
       </div>
-    </div>
-    <div class="intro-copy" aria-live="polite">
-      <p class="intro-line" data-line="0">Hace mucho tiempo…</p>
-      <p class="intro-line intro-line--accent" data-line="1">Casi <strong>365</strong> días…</p>
-      <p class="intro-line intro-line--accent" data-line="2">Casi <strong>12</strong> meses…</p>
-      <p class="intro-line intro-line--final" data-line="3">desde que llegó a nuestra vida.</p>
+
+      <div class="ultimate-copy">
+        <p class="ultimate-line" data-copy="ancient">Hace mucho tiempo…</p>
+        <p class="ultimate-line ultimate-line--number" data-copy="days">Casi <strong>365</strong> días…</p>
+        <p class="ultimate-line ultimate-line--number" data-copy="months">Casi <strong>12</strong> meses…</p>
+        <p class="ultimate-line ultimate-line--warm" data-copy="arrival">desde que llegó a nuestra vida.</p>
+      </div>
+
+      <div class="ultimate-hero" aria-hidden="true">
+        <div class="ultimate-hero__halo"></div>
+        <img src="/aiden-sentado.png" alt="" />
+      </div>
+
+      <div class="ultimate-name">
+        <span>Una pequeña luz llamada</span>
+        <h1>Aiden Leonardo</h1>
+        <p>Mora Molero</p>
+      </div>
+
+      <div class="ultimate-finale">
+        <span class="eyebrow">La selva está lista</span>
+        <h2>Mi primer rugido</h2>
+        <p>Acompáñanos a celebrar su primera vuelta al sol.</p>
+        <div class="ultimate-date"><strong>26</strong><span>agosto<br>2026</span></div>
+      </div>
+
+      <div class="ultimate-audio-status" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
     </div>
   `;
 
-  const createParticles = (container, count, front = false) => {
-    const fragment = document.createDocumentFragment();
-    for (let index = 0; index < count; index += 1) {
-      const particle = document.createElement('span');
-      particle.className = front && index % 5 === 0 ? 'ember ember--bright' : 'ember';
-      particle.style.setProperty('--x', `${Math.random() * 100}%`);
-      particle.style.setProperty('--delay', `${Math.random() * -12}s`);
-      particle.style.setProperty('--duration', `${7 + Math.random() * 11}s`);
-      particle.style.setProperty('--size', `${1 + Math.random() * (front ? 4 : 2)}px`);
-      particle.style.setProperty('--drift', `${-45 + Math.random() * 90}px`);
-      fragment.append(particle);
-    }
-    container.append(fragment);
-  };
-
-  createParticles(scene.querySelector('.intro-particles--back'), 38, false);
-  createParticles(scene.querySelector('.intro-particles--front'), 24, true);
-
-  scene.querySelectorAll('.intro-line').forEach((line) => {
-    const words = line.textContent.trim().split(/\s+/);
-    line.textContent = '';
-    words.forEach((word, index) => {
-      const span = document.createElement('span');
-      span.className = 'intro-word';
-      span.textContent = word;
-      if (/^(365|12)$/.test(word)) span.classList.add('intro-word--number');
-      line.append(span);
-      if (index < words.length - 1) line.append(document.createTextNode(' '));
-    });
-  });
+  const embers = $('.ultimate-embers', scene);
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < 44; index += 1) {
+    const ember = document.createElement('i');
+    ember.style.setProperty('--x', `${Math.random() * 100}%`);
+    ember.style.setProperty('--delay', `${Math.random() * -12}s`);
+    ember.style.setProperty('--duration', `${7 + Math.random() * 11}s`);
+    ember.style.setProperty('--drift', `${-70 + Math.random() * 140}px`);
+    ember.style.setProperty('--size', `${1 + Math.random() * 4}px`);
+    fragment.append(ember);
+  }
+  embers.append(fragment);
 }
 
-function injectAutoplayStyles() {
+function injectCinematicStyles() {
   const style = document.createElement('style');
+  style.dataset.ultimateInvitation = 'true';
   style.textContent = `
-    html,body{scroll-behavior:auto!important}
-    body.autoplay-active{overflow:hidden!important;cursor:default}
-    .preloader p{display:none!important}
-    .preloader{background:#050403!important}
-    .loader-flame{font-size:0!important;width:42px;height:68px;border-radius:52% 48% 60% 40%;background:radial-gradient(circle at 50% 69%,#fff 0 8%,#ffe37a 17%,#ff9d35 43%,#db421e 65%,transparent 72%);filter:drop-shadow(0 0 16px #ff9c3f) drop-shadow(0 0 42px #ff6d2244);animation:introLoaderFlame .72s ease-in-out infinite alternate}
-    .gate{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
-    .scene--candle{min-height:100vh!important;height:100vh!important;padding:0!important;background:#050403!important;color:#fff;overflow:hidden}
-    .intro-depth,.intro-bg,.intro-smoke,.intro-vignette,.intro-particles{position:absolute;inset:-8%;pointer-events:none}
-    .intro-bg--far{background:radial-gradient(circle at 50% 70%,rgba(116,55,22,.38),rgba(19,10,7,.86) 34%,#040302 74%);transform:scale(1.08)}
-    .intro-bg--mid{background:radial-gradient(ellipse at 50% 75%,rgba(236,146,55,.09),transparent 42%),linear-gradient(115deg,transparent 25%,rgba(133,76,36,.08) 50%,transparent 70%);mix-blend-mode:screen}
-    .intro-vignette{inset:0;background:radial-gradient(circle at 50% 52%,transparent 22%,rgba(0,0,0,.22) 55%,rgba(0,0,0,.82) 100%);z-index:9}
-    .intro-smoke{opacity:.24;filter:blur(42px);background:radial-gradient(ellipse at 25% 55%,rgba(240,210,170,.18),transparent 38%),radial-gradient(ellipse at 75% 35%,rgba(200,155,110,.13),transparent 35%);mix-blend-mode:screen}
-    .intro-smoke--back{animation:smokeDriftBack 16s ease-in-out infinite alternate}
-    .intro-smoke--front{opacity:.12;filter:blur(65px);animation:smokeDriftFront 11s ease-in-out infinite alternate-reverse}
-    .intro-particles{z-index:8;overflow:hidden}
-    .ember{position:absolute;left:var(--x);bottom:-8%;width:var(--size);height:var(--size);border-radius:50%;background:#ffd88c;box-shadow:0 0 8px #ffb74d;opacity:0;animation:emberRise var(--duration) linear infinite;animation-delay:var(--delay)}
-    .ember--bright{background:#fff5bd;box-shadow:0 0 10px #fff1a0,0 0 24px #ff8a35}
-    .candle-stage{position:absolute;inset:0;z-index:12;display:grid;place-items:end center;padding-bottom:8vh;transform-style:preserve-3d;perspective:1000px}
-    .candle-premium{position:relative;width:94px;height:270px;border-radius:18px 18px 12px 12px;background:linear-gradient(90deg,#8f5b2e 0%,#dba868 16%,#fff0c6 46%,#e2b478 68%,#8c582c 100%);box-shadow:inset 12px 0 28px #75431c66,inset -12px 0 30px #60351266,0 30px 70px #000b;transform-origin:50% 100%}
-    .wax-rim{position:absolute;left:0;right:0;top:-8px;height:26px;border-radius:50%;background:radial-gradient(ellipse,#f8e4bd 0 28%,#b97c3e 62%,#5b351f 72%);box-shadow:0 5px 10px #4a291a66}
-    .wax-drip{position:absolute;top:5px;width:13px;border-radius:0 0 9px 9px;background:linear-gradient(#efd2a0,#b87638)}
-    .wax-drip--one{left:16px;height:58px}.wax-drip--two{right:21px;height:36px}
-    .wick-premium{position:absolute;left:50%;top:-31px;width:5px;height:30px;border-radius:3px;background:linear-gradient(#17110d,#4a3624);transform:translateX(-50%);box-shadow:0 0 5px #000}
-    .flame-premium{position:absolute;left:50%;top:-113px;width:54px;height:88px;border-radius:48% 52% 62% 38%;background:radial-gradient(circle at 50% 70%,#fff 0 8%,#ffe985 16%,#ffa62f 45%,#e9461f 67%,transparent 72%);filter:drop-shadow(0 0 12px #ffd26b) drop-shadow(0 0 34px #ff7b2c);transform:translateX(-50%) scale(0);opacity:0;z-index:5}
-    .flame-premium i{position:absolute;left:50%;bottom:15px;width:17px;height:35px;border-radius:50% 50% 55% 45%;background:linear-gradient(#fff,#fff5b0 50%,#ffd56a);transform:translateX(-50%);filter:blur(.4px)}
-    .flame-aura{position:absolute;left:50%;top:-245px;width:430px;height:430px;border-radius:50%;background:radial-gradient(circle,rgba(255,218,128,.34),rgba(255,145,50,.12) 34%,transparent 69%);filter:blur(20px);transform:translateX(-50%) scale(.2);opacity:0;mix-blend-mode:screen}
-    .spark{position:absolute;left:50%;top:-45px;width:5px;height:5px;border-radius:50%;background:#fff4a7;box-shadow:0 0 12px #ff9f32;opacity:0;z-index:7}
-    .candle-shadow{position:absolute;left:50%;bottom:5vh;width:320px;height:55px;border-radius:50%;background:radial-gradient(ellipse,#000b,transparent 70%);filter:blur(10px);transform:translateX(-50%);opacity:.65}
-    .intro-copy{position:absolute;z-index:20;left:50%;top:8vh;width:min(900px,90vw);transform:translateX(-50%);text-align:center;display:grid;place-items:center;pointer-events:none}
-    .intro-line{position:absolute;top:0;margin:0;color:#fff8e9;font-family:'Fraunces',serif;font-size:clamp(2rem,5vw,5.4rem);line-height:1.05;letter-spacing:-.025em;text-shadow:0 3px 18px #000,0 0 34px rgba(255,179,78,.26);white-space:normal;opacity:0}
-    .intro-line--final{font-size:clamp(2.1rem,5.5vw,5.8rem);color:#fff0c7}
-    .intro-word{display:inline-block;opacity:0;filter:blur(12px);transform:translateY(24px) scale(.98);will-change:transform,opacity,filter}
-    .intro-word--number{color:#ffd985;text-shadow:0 0 18px #ffaf46,0 0 44px #ff6e253d}
-    body.intro-complete .scene--candle{pointer-events:none}
-    @keyframes introLoaderFlame{from{transform:rotate(-2deg) scale(.94);opacity:.84}to{transform:rotate(2deg) scale(1.06);opacity:1}}
-    @keyframes smokeDriftBack{from{transform:translate3d(-4%,2%,0) scale(1.04)}to{transform:translate3d(5%,-3%,0) scale(1.12)}}
-    @keyframes smokeDriftFront{from{transform:translate3d(5%,-2%,0) scale(1.1)}to{transform:translate3d(-6%,3%,0) scale(1.18)}}
-    @keyframes emberRise{0%{transform:translate3d(0,0,0) scale(.3);opacity:0}12%{opacity:.72}75%{opacity:.35}100%{transform:translate3d(var(--drift),-118vh,0) scale(1.35);opacity:0}}
-    @media(max-width:700px){.candle-stage{padding-bottom:9vh}.candle-premium{width:72px;height:220px}.flame-premium{width:44px;height:72px;top:-94px}.flame-aura{width:320px;height:320px;top:-190px}.intro-copy{top:10vh}.intro-line{font-size:clamp(1.8rem,10vw,3.3rem);width:92vw}}
-    @media(prefers-reduced-motion:reduce){.intro-smoke,.ember{animation:none!important}.intro-bg,.candle-stage{transform:none!important}}
+    html{scroll-behavior:auto!important}
+    body.cinematic-playing{overflow:hidden!important}
+    body.cinematic-playing .progress{opacity:0!important}
+    .scene--candle{height:100svh!important;min-height:100svh!important;padding:0!important;overflow:hidden!important;background:#030302!important;isolation:isolate}
+    .ultimate-cinema,.ultimate-layer,.ultimate-vignette,.ultimate-rays,.ultimate-embers{position:absolute;inset:0}
+    .ultimate-cinema{overflow:hidden;background:#030302;color:#fff}
+    .ultimate-layer{inset:-5%;background-position:center;background-size:cover;opacity:0;transform:scale(1.12);will-change:transform,opacity,filter}
+    .ultimate-layer--night{background-image:linear-gradient(rgba(0,0,0,.28),rgba(0,0,0,.72)),url('/noche.png');opacity:.28}
+    .ultimate-layer--dawn{background-image:linear-gradient(rgba(37,19,5,.25),rgba(10,7,3,.62)),url('/dia.png')}
+    .ultimate-layer--jungle{background-image:linear-gradient(rgba(4,24,15,.2),rgba(2,11,7,.66)),url('/selva.png')}
+    .ultimate-layer--party{background-image:linear-gradient(rgba(3,23,13,.08),rgba(4,12,8,.48)),url('/fiesta dia.png')}
+    .ultimate-vignette{z-index:8;pointer-events:none;background:radial-gradient(circle at 50% 45%,transparent 18%,rgba(0,0,0,.2) 52%,rgba(0,0,0,.82) 100%)}
+    .ultimate-rays{z-index:7;opacity:0;mix-blend-mode:screen;background:conic-gradient(from 180deg at 50% 75%,transparent 0 38%,rgba(255,223,147,.16) 43%,transparent 48% 55%,rgba(255,237,188,.12) 60%,transparent 66%)}
+    .ultimate-embers{z-index:18;pointer-events:none;overflow:hidden}
+    .ultimate-embers i{position:absolute;left:var(--x);bottom:-8%;width:var(--size);height:var(--size);border-radius:50%;opacity:0;background:#ffd88a;box-shadow:0 0 9px #ffad48,0 0 22px rgba(255,103,28,.6);animation:ultimateEmber var(--duration) linear infinite;animation-delay:var(--delay)}
+    .ultimate-candle{position:absolute;z-index:20;left:50%;bottom:7vh;width:106px;height:330px;transform:translateX(-50%);filter:drop-shadow(0 34px 28px rgba(0,0,0,.55))}
+    .ultimate-candle__wax{position:absolute;bottom:0;left:7px;width:92px;height:255px;border-radius:20px 20px 12px 12px;background:linear-gradient(90deg,#79441f,#d99b55 16%,#fff0c8 47%,#d8a363 73%,#74401e);box-shadow:inset 13px 0 22px rgba(74,34,11,.36),inset -12px 0 25px rgba(67,28,8,.38)}
+    .ultimate-candle__wax:before{content:'';position:absolute;left:0;right:0;top:-9px;height:28px;border-radius:50%;background:radial-gradient(ellipse,#fff2ce 0 28%,#bd7c3e 62%,#4c2918 73%)}
+    .ultimate-candle__wax i,.ultimate-candle__wax b{position:absolute;top:5px;width:13px;border-radius:0 0 10px 10px;background:linear-gradient(#f4d6a6,#b46d31)}
+    .ultimate-candle__wax i{left:15px;height:62px}.ultimate-candle__wax b{right:20px;height:39px}
+    .ultimate-candle__wick{position:absolute;z-index:3;left:50%;bottom:252px;width:5px;height:34px;border-radius:3px;background:#24160e;transform:translateX(-50%)}
+    .ultimate-candle__flame{position:absolute;z-index:6;left:50%;bottom:278px;width:60px;height:98px;border-radius:50% 50% 62% 38%;opacity:0;transform:translateX(-50%) scale(.05);transform-origin:50% 100%;background:radial-gradient(circle at 50% 72%,#fff 0 8%,#fff1a5 16%,#ffae37 43%,#ef4a1d 66%,transparent 72%);filter:drop-shadow(0 0 13px #ffe195) drop-shadow(0 0 38px #ff742c)}
+    .ultimate-candle__flame i{position:absolute;left:50%;bottom:17px;width:18px;height:38px;border-radius:50%;transform:translateX(-50%);background:linear-gradient(#fff,#fff6bd 55%,#ffcf5c)}
+    .ultimate-candle__aura{position:absolute;left:50%;bottom:160px;width:480px;height:480px;border-radius:50%;opacity:0;transform:translateX(-50%) scale(.2);background:radial-gradient(circle,rgba(255,226,149,.36),rgba(255,126,38,.12) 36%,transparent 69%);filter:blur(20px);mix-blend-mode:screen}
+    .ultimate-candle__shadow{position:absolute;left:50%;bottom:-18px;width:300px;height:48px;border-radius:50%;transform:translateX(-50%);background:radial-gradient(ellipse,rgba(0,0,0,.75),transparent 70%);filter:blur(9px)}
+    .ultimate-copy,.ultimate-name,.ultimate-finale{position:absolute;z-index:30;left:50%;width:min(940px,90vw);transform:translateX(-50%);text-align:center;pointer-events:none}
+    .ultimate-copy{top:9vh;height:22vh}
+    .ultimate-line{position:absolute;inset:0;display:grid;place-items:center;margin:0;opacity:0;font-family:'Fraunces',serif;font-size:clamp(2.4rem,6vw,6.2rem);line-height:1.02;letter-spacing:-.035em;color:#fff8ea;text-shadow:0 4px 25px #000,0 0 40px rgba(255,169,64,.32);filter:blur(15px);transform:translateY(28px) scale(.96)}
+    .ultimate-line strong{color:#ffd77a;font-size:1.16em;text-shadow:0 0 24px #ffb144,0 0 65px rgba(255,95,22,.5)}
+    .ultimate-line--warm{color:#ffe9b7}
+    .ultimate-hero{position:absolute;z-index:24;left:50%;bottom:-4vh;width:min(52vw,620px);opacity:0;transform:translateX(-50%) translateY(16%) scale(.82);filter:blur(15px);pointer-events:none}
+    .ultimate-hero img{position:relative;z-index:2;display:block;width:100%;max-height:74vh;object-fit:contain;filter:drop-shadow(0 25px 38px rgba(0,0,0,.5))}
+    .ultimate-hero__halo{position:absolute;z-index:1;left:50%;top:43%;width:84%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(255,226,145,.52),rgba(245,152,52,.15) 44%,transparent 70%);filter:blur(22px)}
+    .ultimate-name{top:8vh;opacity:0;filter:blur(12px);transform:translateX(-50%) translateY(25px)}
+    .ultimate-name span{font-size:clamp(.75rem,1.5vw,1rem);letter-spacing:.3em;text-transform:uppercase;color:#f8d995}
+    .ultimate-name h1{margin:.35rem 0 0;font-family:'Fraunces',serif;font-size:clamp(3.2rem,8vw,8rem);line-height:.9;color:#fff5dd;text-shadow:0 4px 28px #000,0 0 55px rgba(255,178,63,.35)}
+    .ultimate-name p{margin:.6rem 0;font-size:clamp(1rem,2vw,1.45rem);letter-spacing:.32em;text-transform:uppercase;color:#ffd27b}
+    .ultimate-finale{top:50%;opacity:0;transform:translate(-50%,-44%) scale(.88);filter:blur(18px);padding:clamp(1.4rem,4vw,3rem);border:1px solid rgba(255,229,167,.38);border-radius:30px;background:linear-gradient(145deg,rgba(7,42,27,.83),rgba(4,22,14,.73));box-shadow:0 30px 90px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.12);backdrop-filter:blur(13px)}
+    .ultimate-finale h2{margin:.4rem 0;font-family:'Fraunces',serif;font-size:clamp(3.3rem,8vw,8rem);line-height:.9;color:#fff3cf;text-shadow:0 4px 24px #000,0 0 45px rgba(255,190,72,.28)}
+    .ultimate-finale p{margin:1rem auto;max-width:620px;font-size:clamp(1rem,2vw,1.35rem);color:#f9efd7}
+    .ultimate-date{display:flex;justify-content:center;align-items:center;gap:.8rem;margin-top:1.2rem;color:#ffd579}
+    .ultimate-date strong{font-family:'Fraunces',serif;font-size:clamp(3rem,7vw,6rem);line-height:.8}.ultimate-date span{text-align:left;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+    .ultimate-audio-status{position:absolute;z-index:40;right:1.3rem;bottom:1.25rem;display:flex;align-items:flex-end;gap:3px;height:18px;opacity:.58}
+    .ultimate-audio-status span{display:block;width:3px;border-radius:3px;background:#ffd477;animation:ultimateMeter .72s ease-in-out infinite alternate}.ultimate-audio-status span:nth-child(2){animation-delay:-.25s}.ultimate-audio-status span:nth-child(3){animation-delay:-.5s}.ultimate-audio-status span:nth-child(4){animation-delay:-.15s}
+    .gate{opacity:1!important;visibility:visible!important;pointer-events:auto!important;background:#030805!important}
+    .gate.is-open{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+    .gate__card small{max-width:36rem}.gate__card:after{content:'La narración y la música comienzan juntas.';display:block;margin-top:.75rem;font-size:.75rem;opacity:.65}
+    @keyframes ultimateEmber{0%{opacity:0;transform:translate3d(0,0,0) scale(.6)}15%{opacity:.8}100%{opacity:0;transform:translate3d(var(--drift),-112vh,0) scale(1.4)}}
+    @keyframes ultimateMeter{from{height:4px}to{height:18px}}
+    @media(max-width:700px){.ultimate-candle{transform:translateX(-50%) scale(.78);transform-origin:bottom center;bottom:2vh}.ultimate-copy{top:8vh}.ultimate-hero{width:88vw}.ultimate-name{top:9vh}.ultimate-finale{width:88vw}.ultimate-finale h2{font-size:clamp(3rem,16vw,5.2rem)}}
+    @media(prefers-reduced-motion:reduce){.ultimate-embers i,.ultimate-audio-status span{animation:none!important}}
   `;
   document.head.append(style);
 }
 
-function chooseSpanishVoice() {
-  return speechSynthesis.getVoices().find((voice) => /^es(-|_)/i.test(voice.lang)) || null;
+function configureGate() {
+  const button = $('#startButton');
+  const note = $('.gate__card small');
+  if (button) button.textContent = 'Toca para comenzar';
+  if (note) note.textContent = 'Este toque activa el diálogo original y la música de fondo.';
 }
 
-function narrate(text, options = {}) {
-  if (!('speechSynthesis' in window) || stopped) return;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'es-ES';
-  utterance.rate = options.rate ?? 0.82;
-  utterance.pitch = options.pitch ?? 0.96;
-  utterance.volume = options.volume ?? 0.9;
-  const voice = chooseSpanishVoice();
-  if (voice) utterance.voice = voice;
-  currentUtterance = utterance;
-  try { speechSynthesis.speak(utterance); } catch { /* Autoplay de voz puede ser bloqueado. */ }
+function prepareAudio() {
+  if (dialogue && music) return;
+
+  dialogue = new Audio(getDialogueUrl());
+  dialogue.preload = 'auto';
+  dialogue.volume = 1;
+  dialogue.load();
+
+  music = new Audio(MUSIC_URL);
+  music.preload = 'auto';
+  music.loop = true;
+  music.volume = 0;
+  music.load();
 }
 
-function startAmbience() {
-  try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    ambienceContext = ambienceContext || new AudioContext();
-    ambienceGain = ambienceContext.createGain();
-    ambienceGain.gain.value = 0.0001;
-    ambienceGain.connect(ambienceContext.destination);
-
-    const fire = ambienceContext.createOscillator();
-    const fireGain = ambienceContext.createGain();
-    const filter = ambienceContext.createBiquadFilter();
-    fire.type = 'triangle';
-    fire.frequency.value = 72;
-    filter.type = 'lowpass';
-    filter.frequency.value = 240;
-    fireGain.gain.value = 0.016;
-    fire.connect(filter).connect(fireGain).connect(ambienceGain);
-    fire.start();
-
-    const now = ambienceContext.currentTime;
-    ambienceGain.gain.exponentialRampToValueAtTime(0.5, now + 4.2);
-  } catch { /* El navegador puede exigir interacción para AudioContext. */ }
-}
-
-function sparkleTone(frequency = 620, duration = 0.45, volume = 0.025) {
-  if (!ambienceContext || ambienceContext.state !== 'running') return;
-  const oscillator = ambienceContext.createOscillator();
-  const gain = ambienceContext.createGain();
-  oscillator.type = 'sine';
-  oscillator.frequency.value = frequency;
-  gain.gain.setValueAtTime(volume, ambienceContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, ambienceContext.currentTime + duration);
-  oscillator.connect(gain).connect(ambienceContext.destination);
-  oscillator.start();
-  oscillator.stop(ambienceContext.currentTime + duration);
-}
-
-function revealLine(line, startAt, hold = 2.2) {
-  const words = [...line.querySelectorAll('.intro-word')];
-  const timeline = gsap.timeline({ delay: startAt });
-  timeline.to(line, { opacity: 1, duration: 0.1 });
-  timeline.to(words, {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    filter: 'blur(0px)',
-    duration: 0.78,
-    stagger: 0.34,
-    ease: 'power3.out',
-    onStart: () => sparkleTone(560 + Number(line.dataset.line) * 70, 0.42),
-  });
-  timeline.to(words.filter((word) => word.classList.contains('intro-word--number')), {
-    scale: 1.08,
-    textShadow: '0 0 25px #ffd67a, 0 0 58px #ff7a2d',
-    yoyo: true,
-    repeat: 1,
-    duration: 0.4,
+function fadeAudio(audio, target, duration = 1.5) {
+  if (!audio) return;
+  const state = { volume: audio.volume };
+  gsap.killTweensOf(state);
+  gsap.to(state, {
+    volume: target,
+    duration,
     ease: 'sine.inOut',
-  }, '<40%');
-  timeline.to(line, { opacity: 0, y: -12, filter: 'blur(8px)', duration: 1.05, ease: 'power2.in' }, `+=${hold}`);
-  return timeline;
+    onUpdate: () => {
+      audio.volume = Math.max(0, Math.min(1, state.volume));
+    },
+  });
 }
 
-async function playCandleScene() {
-  const scene = document.querySelector('[data-scene="candle"]');
-  if (!scene) return;
+function buildTimeline() {
+  if (cinematicTimeline) return cinematicTimeline;
 
-  window.scrollTo(0, 0);
-  scene.scrollIntoView({ block: 'start' });
+  const scene = $('[data-scene="candle"]');
+  if (!scene) return null;
 
-  ScrollTrigger.getAll().forEach((trigger) => {
-    if (trigger.trigger?.dataset?.scene === 'candle') trigger.kill(true);
+  const night = $('.ultimate-layer--night', scene);
+  const dawn = $('.ultimate-layer--dawn', scene);
+  const jungle = $('.ultimate-layer--jungle', scene);
+  const party = $('.ultimate-layer--party', scene);
+  const candle = $('.ultimate-candle', scene);
+  const flame = $('.ultimate-candle__flame', scene);
+  const aura = $('.ultimate-candle__aura', scene);
+  const rays = $('.ultimate-rays', scene);
+  const ancient = $('[data-copy="ancient"]', scene);
+  const days = $('[data-copy="days"]', scene);
+  const months = $('[data-copy="months"]', scene);
+  const arrival = $('[data-copy="arrival"]', scene);
+  const hero = $('.ultimate-hero', scene);
+  const name = $('.ultimate-name', scene);
+  const finale = $('.ultimate-finale', scene);
+
+  const reveal = (target, at, hold = 3.2) => {
+    cinematicTimeline
+      .to(target, { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.35, ease: 'power3.out' }, at)
+      .to(target, { opacity: 0, y: -20, filter: 'blur(10px)', duration: 1.05, ease: 'power2.in' }, at + hold);
+  };
+
+  cinematicTimeline = gsap.timeline({ paused: true, defaults: { overwrite: 'auto' } });
+  cinematicTimeline
+    .set(scene, { autoAlpha: 1 }, 0)
+    .fromTo(candle, { opacity: .05, y: 70, scale: .84 }, { opacity: 1, y: 0, scale: 1, duration: 3.8, ease: 'power3.out' }, 0)
+    .to(night, { opacity: .55, scale: 1.04, duration: 8, ease: 'none' }, 0)
+    .to(flame, { opacity: 1, scale: 1, duration: 2.2, ease: 'elastic.out(1,.45)' }, 2.1)
+    .to(aura, { opacity: 1, scale: 1, duration: 3, ease: 'power2.out' }, 2.3)
+    .to(rays, { opacity: .5, duration: 4 }, 3);
+
+  gsap.to(flame, {
+    rotation: 2.5,
+    scaleY: 1.07,
+    duration: .45,
+    repeat: -1,
+    yoyo: true,
+    ease: 'sine.inOut',
+    transformOrigin: '50% 100%',
   });
 
-  startAmbience();
+  reveal(ancient, 4.8, 4.1);
+  reveal(days, 11.2, 4.3);
+  reveal(months, 18.2, 4.1);
+  reveal(arrival, 25.2, 4.7);
 
-  const candle = scene.querySelector('.candle-premium');
-  const flame = scene.querySelector('.flame-premium');
-  const aura = scene.querySelector('.flame-aura');
-  const stage = scene.querySelector('.candle-stage');
-  const bgFar = scene.querySelector('.intro-bg--far');
-  const bgMid = scene.querySelector('.intro-bg--mid');
-  const sparks = scene.querySelectorAll('.spark');
-  const lines = [...scene.querySelectorAll('.intro-line')];
+  cinematicTimeline
+    .to(dawn, { opacity: .72, scale: 1.03, duration: 5.5, ease: 'power2.inOut' }, 29)
+    .to(night, { opacity: 0, duration: 5.5 }, 29)
+    .to(candle, { y: 110, opacity: 0, scale: 1.2, duration: 4.5, ease: 'power2.in' }, 30.5)
+    .to(hero, { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 3.8, ease: 'power3.out' }, 31.5)
+    .to(name, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 2.4, ease: 'power3.out' }, 34)
+    .to(jungle, { opacity: .72, scale: 1.02, duration: 5.5, ease: 'power2.inOut' }, 39)
+    .to(dawn, { opacity: 0, duration: 5 }, 39)
+    .to(hero, { scale: 1.06, y: -18, duration: 8, ease: 'none' }, 39)
+    .to(name, { opacity: 0, y: -25, filter: 'blur(9px)', duration: 1.5 }, 43.5)
+    .to(hero, { opacity: 0, y: 80, filter: 'blur(12px)', duration: 2.8, ease: 'power2.in' }, 45)
+    .to(party, { opacity: .88, scale: 1, duration: 5, ease: 'power2.inOut' }, 45)
+    .to(jungle, { opacity: .2, duration: 4 }, 45)
+    .to(finale, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 3.2, ease: 'back.out(1.25)' }, 48.2)
+    .to(finale, { scale: 1.025, duration: 6, ease: 'sine.inOut' }, 52)
+    .to(rays, { opacity: .85, rotation: 4, duration: 8, ease: 'none' }, 49);
 
-  gsap.set(candle, { opacity: 0.05, y: 48, scale: 0.88 });
-  gsap.set(stage, { scale: 1.22, y: -24 });
-
-  const master = gsap.timeline();
-  master
-    .to(candle, { opacity: 0.32, y: 22, duration: 1.8, ease: 'power2.out' }, 0)
-    .to(stage, { scale: 1.08, y: -8, duration: 3.6, ease: 'power1.inOut' }, 0)
-    .to(bgFar, { scale: 1.14, xPercent: -1.8, duration: 18, ease: 'none' }, 0)
-    .to(bgMid, { scale: 1.1, xPercent: 2.5, yPercent: -1.4, duration: 15, ease: 'none' }, 0)
-    .to(candle, { opacity: 1, y: 0, scale: 1, duration: 1.7, ease: 'power3.out' }, 1.5)
-    .to(sparks[0], { opacity: 1, x: -18, y: -32, duration: 0.25, yoyo: true, repeat: 1 }, 2.55)
-    .to(sparks[1], { opacity: 1, x: 20, y: -48, duration: 0.3, yoyo: true, repeat: 1 }, 3.05)
-    .to(flame, { opacity: 1, scale: 0.18, duration: 0.25, ease: 'back.out(2)' }, 3.45)
-    .to(flame, { scale: 1, duration: 2.15, ease: 'elastic.out(1,.45)' }, 3.65)
-    .to(aura, { opacity: 1, scale: 1, duration: 2.7, ease: 'power2.out' }, 3.8)
-    .to(stage, { scale: 1, y: 0, duration: 2.8, ease: 'sine.inOut' }, 3.9);
-
-  gsap.to(flame, { rotation: 2.4, skewX: 2, scaleY: 1.06, duration: 0.48, repeat: -1, yoyo: true, ease: 'sine.inOut', transformOrigin: '50% 100%' });
-  gsap.to(aura, { scale: 1.08, opacity: 0.78, duration: 1.6, repeat: -1, yoyo: true, ease: 'sine.inOut' });
-  gsap.to(stage, { x: 10, y: -4, duration: 5.5, repeat: -1, yoyo: true, ease: 'sine.inOut' });
-
-  await sleep(5200);
-  narrate('Hace mucho tiempo… casi trescientos sesenta y cinco días… casi doce meses… desde que llegó a nuestra vida.', { rate: 0.74, pitch: 0.94 });
-
-  revealLine(lines[0], 0, 1.15);
-  revealLine(lines[1], 4.1, 1.15);
-  revealLine(lines[2], 8.2, 1.05);
-  revealLine(lines[3], 12.1, 2.2);
-
-  await sleep(18200);
-
-  await gsap.timeline()
-    .to('.intro-copy', { opacity: 0, duration: 0.8 })
-    .to(aura, { scale: 4.2, opacity: 1, duration: 2.4, ease: 'power2.in' }, '<')
-    .to(flame, { scale: 2.1, filter: 'drop-shadow(0 0 28px #fff6bb) drop-shadow(0 0 90px #ff8b34)', duration: 2.1, ease: 'power2.in' }, '<')
-    .to(scene, { filter: 'brightness(2.2)', duration: 1.5, ease: 'power2.in' }, '<.7');
-
-  document.body.classList.add('intro-complete');
+  const clock = {};
+  cinematicTimeline.to(clock, { duration: .001 }, DIALOGUE_DURATION - .001);
+  return cinematicTimeline;
 }
 
-async function moveToScene(sceneName, duration) {
-  if (stopped) return;
-  const scene = document.querySelector(`[data-scene="${sceneName}"]`);
-  if (!scene) return;
-  document.body.style.overflow = 'hidden';
-  gsap.to(window, {
-    scrollTo: { y: scene, autoKill: false },
-    duration: Math.min(2.4, Math.max(1.25, duration * 0.00016)),
-    ease: 'power2.inOut',
-  });
-  scene.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  await sleep(Math.min(2400, Math.max(1200, duration * 0.17)));
-}
-
-async function playRemainingStory() {
-  for (const [sceneName, narration, duration] of sceneOrder) {
-    if (stopped) break;
-    await moveToScene(sceneName, duration);
-    narrate(narration);
-    await sleep(duration);
+function syncTimeline() {
+  if (!dialogue || !cinematicTimeline) return;
+  cinematicTimeline.time(Math.min(dialogue.currentTime, DIALOGUE_DURATION), false);
+  if (!dialogue.paused && !dialogue.ended) {
+    animationFrame = requestAnimationFrame(syncTimeline);
   }
-  document.body.style.overflow = '';
 }
 
-async function playStory() {
-  document.body.classList.add('autoplay-active', 'started');
-  window.scrollTo(0, 0);
-
-  const startButton = document.querySelector('#startButton');
-  if (startButton) startButton.click();
-
-  await sleep(180);
-  await playCandleScene();
-  await playRemainingStory();
-}
-
-function startAfterLoading() {
-  const preloader = document.querySelector('#preloader');
-  const gate = document.querySelector('#gate');
-  if (gate) gate.classList.add('is-open');
+function finishCinematic() {
+  cancelAnimationFrame(animationFrame);
+  cinematicTimeline?.time(DIALOGUE_DURATION, false);
+  fadeAudio(music, muted ? 0 : .26, 2.5);
 
   setTimeout(() => {
-    if (preloader) preloader.classList.add('is-hidden');
-    setTimeout(playStory, 420);
-  }, 1700);
+    document.body.classList.remove('cinematic-playing');
+    const invitation = $('[data-scene="invitation"]');
+    invitation?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 1800);
 }
 
-injectIntroMarkup();
-injectAutoplayStyles();
+async function startExperience(event) {
+  event?.preventDefault();
+  event?.stopImmediatePropagation();
+  if (started) return;
 
-window.addEventListener('load', (event) => {
-  event.stopImmediatePropagation();
-  startAfterLoading();
-}, { capture: true, once: true });
+  started = true;
+  prepareAudio();
+  buildTimeline();
+
+  const gate = $('#gate');
+  gate?.classList.add('is-open');
+  const soundToggle = $('#soundToggle');
+  if (soundToggle) soundToggle.textContent = muted ? '🔇' : '🔊';
+  document.body.classList.add('cinematic-playing', 'started');
+  window.scrollTo(0, 0);
+  $('[data-scene="candle"]')?.scrollIntoView({ block: 'start' });
+
+  music.volume = 0;
+  dialogue.volume = muted ? 0 : 1;
+  const musicPromise = music.play();
+  const dialoguePromise = dialogue.play();
+  fadeAudio(music, muted ? 0 : .16, 2.8);
+
+  dialogue.addEventListener('ended', finishCinematic, { once: true });
+  dialogue.addEventListener('error', handleAudioFailure, { once: true });
+
+  const [, dialogueResult] = await Promise.allSettled([musicPromise, dialoguePromise]);
+  if (dialogueResult.status === 'rejected') {
+    handleAudioFailure();
+    return;
+  }
+
+  cinematicTimeline?.pause(0);
+  syncTimeline();
+}
+
+function handleAudioFailure() {
+  cancelAnimationFrame(animationFrame);
+  dialogue?.pause();
+  music?.pause();
+  started = false;
+  document.body.classList.remove('cinematic-playing');
+  $('#gate')?.classList.remove('is-open');
+  const button = $('#startButton');
+  if (button) button.textContent = 'Reintentar audio';
+}
+
+function bindControls() {
+  const startButton = $('#startButton');
+  const soundToggle = $('#soundToggle');
+
+  startButton?.addEventListener('click', startExperience, { capture: true });
+
+  soundToggle?.addEventListener('click', () => {
+    muted = !muted;
+    if (dialogue) dialogue.muted = muted;
+    if (music) music.muted = muted;
+    setTimeout(() => {
+      if (soundToggle) soundToggle.textContent = muted ? '🔇' : '🔊';
+    }, 0);
+  }, { capture: true });
+}
+
+injectCinematicMarkup();
+injectCinematicStyles();
+configureGate();
+prepareAudio();
+bindControls();
 
 window.addEventListener('beforeunload', () => {
-  stopped = true;
-  if (currentUtterance && 'speechSynthesis' in window) speechSynthesis.cancel();
-  if (ambienceContext) ambienceContext.close().catch(() => {});
+  cancelAnimationFrame(animationFrame);
+  dialogue?.pause();
+  music?.pause();
+  releaseDialogueUrl();
 });
