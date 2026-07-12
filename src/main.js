@@ -1,4 +1,5 @@
 import './styles.css';
+import './asset-integration.js';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from '@studio-freight/lenis';
@@ -188,7 +189,7 @@ function initAnimations() {
     .from('.animal--guardian', { scale: 0.5, opacity: 0 }, '<')
     .to('.lion-aura', { scale: 1.7, opacity: 0.35 });
 
-  $$('.scene--awakening .animal').forEach((animal, index) => {
+  $$('.scene--awakening .animal:not([hidden])').forEach((animal, index) => {
     gsap.from(animal, {
       y: 120,
       x: index % 2 ? 100 : -100,
@@ -198,8 +199,10 @@ function initAnimations() {
       scrollTrigger: { trigger: '[data-scene="awakening"]', start: 'top 65%' },
     });
   });
-  gsap.to('.animal--monkey', { rotation: 4, transformOrigin: 'top center', repeat: -1, yoyo: true, duration: 1.6, ease: 'sine.inOut' });
-  gsap.to('.animal--toucan', { x: -30, y: 12, repeat: -1, yoyo: true, duration: 2.4, ease: 'sine.inOut' });
+  const monkey = $('.animal--monkey:not([hidden])');
+  const toucan = $('.animal--toucan:not([hidden])');
+  if (monkey) gsap.to(monkey, { rotation: 4, transformOrigin: 'top center', repeat: -1, yoyo: true, duration: 1.6, ease: 'sine.inOut' });
+  if (toucan) gsap.to(toucan, { x: -30, y: 12, repeat: -1, yoyo: true, duration: 2.4, ease: 'sine.inOut' });
 
   gsap.from('.invitation-card', {
     scale: 0.75,
