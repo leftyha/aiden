@@ -1,27 +1,27 @@
 const assetMap = new Map([
-  ['/assets/backgrounds/dawn.webp', '/imagenes/dia.png'],
-  ['/assets/backgrounds/clearing.webp', '/imagenes/selva.png'],
-  ['/assets/backgrounds/night.webp', '/imagenes/noche.png'],
-  ['/assets/backgrounds/party.webp', '/imagenes/fiesta dia.png'],
-  ['/assets/decor/foreground.webp', '/imagenes/marco-dia.png'],
-  ['/assets/decor/night-frame.webp', '/imagenes/marco-noche.png'],
-  ['/assets/characters/aiden-sitting-lion.webp', '/imagenes/aiden-sentado.png'],
-  ['/assets/characters/aiden-crawling.webp', '/imagenes/aiden gateando.png'],
-  ['/assets/characters/aiden-standing-green.webp', '/imagenes/aiden de pie.png'],
-  ['/assets/characters/aiden-standing-blue.webp', '/imagenes/aiden de pie.png'],
-  ['/assets/characters/aiden-waving.webp', '/imagenes/aiden saludando.png'],
-  ['/assets/animals/elephant.webp', '/imagenes/elefante.png'],
-  ['/assets/animals/giraffe.webp', '/imagenes/jirafa.png'],
-  ['/assets/animals/zebra.webp', '/imagenes/Cebra.png'],
-  ['/assets/animals/toucan.webp', '/imagenes/tucan.png'],
-  ['/assets/photos/aiden-01.webp', '/imagenes/aiden-sentado.png'],
-  ['/assets/photos/aiden-02.webp', '/imagenes/aiden gateando.png'],
-  ['/assets/photos/aiden-03.webp', '/imagenes/aiden de pie.png'],
-  ['/assets/photos/aiden-04.webp', '/imagenes/aiden saludando.png'],
-  ['/assets/photos/aiden-05.webp', '/imagenes/aiden-sentado.png'],
-  ['/assets/photos/aiden-07.webp', '/imagenes/aiden saludando.png'],
-  ['/assets/photos/aiden-08.webp', '/imagenes/aiden gateando.png'],
-  ['/assets/photos/aiden-09.webp', '/imagenes/aiden de pie.png'],
+  ['/assets/backgrounds/dawn.webp', '/dia.png'],
+  ['/assets/backgrounds/clearing.webp', '/selva.png'],
+  ['/assets/backgrounds/night.webp', '/noche.png'],
+  ['/assets/backgrounds/party.webp', '/fiesta dia.png'],
+  ['/assets/decor/foreground.webp', '/marco-dia.png'],
+  ['/assets/decor/night-frame.webp', '/marco-noche.png'],
+  ['/assets/characters/aiden-sitting-lion.webp', '/aiden-sentado.png'],
+  ['/assets/characters/aiden-crawling.webp', '/aiden gateando.png'],
+  ['/assets/characters/aiden-standing-green.webp', '/aiden de pie.png'],
+  ['/assets/characters/aiden-standing-blue.webp', '/aiden de pie.png'],
+  ['/assets/characters/aiden-waving.webp', '/aiden saludando.png'],
+  ['/assets/animals/elephant.webp', '/elefante.png'],
+  ['/assets/animals/giraffe.webp', '/jirafa.png'],
+  ['/assets/animals/zebra.webp', '/Cebra.png'],
+  ['/assets/animals/toucan.webp', '/tucan.png'],
+  ['/assets/photos/aiden-01.webp', '/aiden-sentado.png'],
+  ['/assets/photos/aiden-02.webp', '/aiden gateando.png'],
+  ['/assets/photos/aiden-03.webp', '/aiden de pie.png'],
+  ['/assets/photos/aiden-04.webp', '/aiden saludando.png'],
+  ['/assets/photos/aiden-05.webp', '/aiden-sentado.png'],
+  ['/assets/photos/aiden-07.webp', '/aiden saludando.png'],
+  ['/assets/photos/aiden-08.webp', '/aiden gateando.png'],
+  ['/assets/photos/aiden-09.webp', '/aiden de pie.png'],
 ]);
 
 const hiddenAssets = new Set([
@@ -44,42 +44,42 @@ function resolveImageAssets() {
 
 const decorations = {
   dawn: [
-    ['imagenes/lianas/sprite_0004.png', 'decor decor--top-left', 1.6],
-    ['imagenes/lianas/sprite_0012.png', 'decor decor--top-right', 1.2],
-    ['imagenes/arbustos-plantas/sprite_0002.png', 'decor decor--bottom-left', 0.8],
-    ['imagenes/flores/sprite_0001.png', 'decor decor--bottom-right decor--small', 1.3],
+    ['lianas/sprite_0004.png', 'decor decor--top-left', 1.6],
+    ['lianas/sprite_0012.png', 'decor decor--top-right', 1.2],
+    ['arbustos-plantas/sprite_0002.png', 'decor decor--bottom-left', 0.8],
+    ['flores/sprite_0001.png', 'decor decor--bottom-right decor--small', 1.3],
   ],
   arrival: [
-    ['imagenes/arbustos-plantas/sprite_0010.png', 'decor decor--bottom-left', 1.1],
-    ['imagenes/flores/sprite_0004.png', 'decor decor--bottom-right decor--small', 1.5],
-    ['imagenes/lianas/sprite_0018.png', 'decor decor--top-right', 1.4],
+    ['arbustos-plantas/sprite_0010.png', 'decor decor--bottom-left', 1.1],
+    ['flores/sprite_0004.png', 'decor decor--bottom-right decor--small', 1.5],
+    ['lianas/sprite_0018.png', 'decor decor--top-right', 1.4],
   ],
   night: [
-    ['imagenes/lianas/sprite_0008.png', 'decor decor--top-left decor--night', 1.4],
-    ['imagenes/deco-2-small/sprite_0007.png', 'decor decor--float-left decor--tiny', 1.8],
-    ['imagenes/deco-2-small/sprite_0014.png', 'decor decor--float-right decor--tiny', 2.1],
+    ['lianas/sprite_0008.png', 'decor decor--top-left decor--night', 1.4],
+    ['deco-2-small/sprite_0007.png', 'decor decor--float-left decor--tiny', 1.8],
+    ['deco-2-small/sprite_0014.png', 'decor decor--float-right decor--tiny', 2.1],
   ],
   personality: [
-    ['imagenes/flores/sprite_0006.png', 'decor decor--bottom-left decor--small', 1.1],
-    ['imagenes/arbustos-plantas/sprite_0015.png', 'decor decor--bottom-right', 0.8],
+    ['flores/sprite_0006.png', 'decor decor--bottom-left decor--small', 1.1],
+    ['arbustos-plantas/sprite_0015.png', 'decor decor--bottom-right', 0.8],
   ],
   awakening: [
-    ['imagenes/decorativos-fiesta/sprite_0000.png', 'decor decor--top-left decor--party', 1.4],
-    ['imagenes/decorativos-fiesta/sprite_0003.png', 'decor decor--top-right decor--party', 1.7],
-    ['imagenes/decorativos-fiesta/sprite_0011.png', 'decor decor--bottom-center decor--party-small', 1.2],
+    ['decorativos-fiesta/sprite_0000.png', 'decor decor--top-left decor--party', 1.4],
+    ['decorativos-fiesta/sprite_0003.png', 'decor decor--top-right decor--party', 1.7],
+    ['decorativos-fiesta/sprite_0011.png', 'decor decor--bottom-center decor--party-small', 1.2],
   ],
   invitation: [
-    ['imagenes/carteles/sprite_0002.png', 'decor decor--sign', 0.9],
-    ['imagenes/decorativos-fiesta/sprite_0017.png', 'decor decor--top-right decor--party-small', 1.6],
-    ['imagenes/flores/sprite_0012.png', 'decor decor--bottom-right decor--small', 1.3],
+    ['carteles/sprite_0002.png', 'decor decor--sign', 0.9],
+    ['decorativos-fiesta/sprite_0017.png', 'decor decor--top-right decor--party-small', 1.6],
+    ['flores/sprite_0012.png', 'decor decor--bottom-right decor--small', 1.3],
   ],
   details: [
-    ['imagenes/carteles/sprite_0010.png', 'decor decor--top-left decor--sign-small', 1.1],
-    ['imagenes/arbustos-plantas/sprite_0020.png', 'decor decor--bottom-right', 0.8],
+    ['carteles/sprite_0010.png', 'decor decor--top-left decor--sign-small', 1.1],
+    ['arbustos-plantas/sprite_0020.png', 'decor decor--bottom-right', 0.8],
   ],
   closing: [
-    ['imagenes/decorativos-fiesta/sprite_0021.png', 'decor decor--bottom-left decor--party-small', 1.2],
-    ['imagenes/decorativos-fiesta/sprite_0028.png', 'decor decor--bottom-right decor--party-small', 1.4],
+    ['decorativos-fiesta/sprite_0021.png', 'decor decor--bottom-left decor--party-small', 1.2],
+    ['decorativos-fiesta/sprite_0028.png', 'decor decor--bottom-right decor--party-small', 1.4],
   ],
 };
 
@@ -117,6 +117,7 @@ function markIllustratedGallery() {
 function injectStyles() {
   const style = document.createElement('style');
   style.textContent = `
+    .gate__mist{background-image:url('/noche.png')!important}
     .decor{position:absolute;z-index:1;pointer-events:none;user-select:none;object-fit:contain;filter:drop-shadow(0 18px 18px rgba(6,31,21,.2));will-change:transform}
     .decor--top-left{top:-3%;left:-3%;width:min(35vw,520px)}
     .decor--top-right{top:-4%;right:-4%;width:min(35vw,520px)}
