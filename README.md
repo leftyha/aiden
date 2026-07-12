@@ -24,10 +24,11 @@ npm run build
 
 ## Antes de publicar
 
-1. Reemplazar el número de WhatsApp en `src/main.js`.
-2. Completar hora, lugar y enlace de Google Maps.
-3. Añadir audios/narración finales si se producen.
-4. Revisar autorización familiar para publicar las fotos reales.
+1. Copiar el paquete visual completo dentro de `public/assets/`.
+2. Reemplazar el número de WhatsApp en `src/main.js`.
+3. Completar hora, lugar y enlace de Google Maps.
+4. Añadir audios o narración finales cuando estén producidos.
+5. Revisar autorización familiar para publicar las fotos reales.
 
 ## Tecnología
 
@@ -37,9 +38,16 @@ npm run build
 - Howler.js
 - HTML/CSS/JavaScript
 
-## Assets
+## Estructura visual esperada
 
-Los recursos visuales se guardan comprimidos en `assets-bundle/`. Los scripts `predev` y `prebuild` los extraen automáticamente antes de ejecutar o compilar el sitio.
+```text
+public/assets/
+  animals/
+  backgrounds/
+  characters/
+  decor/
+  photos/
+```
 
 ## Privacidad
 
