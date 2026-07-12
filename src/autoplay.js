@@ -2,6 +2,7 @@ import gsap from 'gsap';
 import { DIALOGUE_DURATION, getDialogueUrl, releaseDialogueUrl } from './audio/dialogue.js';
 
 const MUSIC_URL = new URL('../Golden Lion Wishes.mp3', import.meta.url).href;
+const FINAL_DIALOGUE_LINE = 'Yo creo en ti, mi gran león.';
 const $ = (selector, root = document) => root.querySelector(selector);
 
 let dialogue = null;
@@ -10,6 +11,8 @@ let cinematicTimeline = null;
 let animationFrame = 0;
 let started = false;
 let muted = false;
+let finishing = false;
+let finalUtterance = null;
 
 function injectCinematicMarkup() {
   const scene = $('[data-scene="candle"]');
@@ -56,6 +59,10 @@ function injectCinematicMarkup() {
         <h2>Mi primer rugido</h2>
         <p>Acompáñanos a celebrar su primera vuelta al sol.</p>
         <div class="ultimate-date"><strong>04</strong><span>octubre<br>2026</span></div>
+        <blockquote class="ultimate-final-quote">
+          <span>Yo creo en ti,</span>
+          <strong>mi gran león.</strong>
+        </blockquote>
       </div>
 
       <div class="ultimate-audio-status" aria-hidden="true">
@@ -124,6 +131,8 @@ function injectCinematicStyles() {
     .ultimate-finale p{margin:1rem auto;max-width:620px;font-size:clamp(1rem,2vw,1.35rem);color:#f9efd7}
     .ultimate-date{display:flex;justify-content:center;align-items:center;gap:.8rem;margin-top:1.2rem;color:#ffd579}
     .ultimate-date strong{font-family:'Fraunces',serif;font-size:clamp(3rem,7vw,6rem);line-height:.8}.ultimate-date span{text-align:left;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+    .ultimate-final-quote{margin:1.15rem auto 0;opacity:0;transform:translateY(16px) scale(.96);font-family:'Fraunces',serif;font-style:italic;color:#fff4d4;text-shadow:0 3px 18px rgba(0,0,0,.65)}
+    .ultimate-final-quote span,.ultimate-final-quote strong{display:block}.ultimate-final-quote span{font-size:clamp(1.05rem,2.1vw,1.45rem)}.ultimate-final-quote strong{margin-top:.2rem;font-size:clamp(1.65rem,3.8vw,2.8rem);color:#ffd579}
     .ultimate-audio-status{position:absolute;z-index:40;right:1.3rem;bottom:1.25rem;display:flex;align-items:flex-end;gap:3px;height:18px;opacity:.58}
     .ultimate-audio-status span{display:block;width:3px;border-radius:3px;background:#ffd477;animation:ultimateMeter .72s ease-in-out infinite alternate}.ultimate-audio-status span:nth-child(2){animation-delay:-.25s}.ultimate-audio-status span:nth-child(3){animation-delay:-.5s}.ultimate-audio-status span:nth-child(4){animation-delay:-.15s}
     .gate{opacity:1!important;visibility:visible!important;pointer-events:auto!important;background:#030805!important}
@@ -173,6 +182,62 @@ function fadeAudio(audio, target, duration = 1.5) {
   });
 }
 
+function getPreferredSpanishVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  const spanishVoices = voices.filter((voice) => /^es([_-]|$)/i.test(voice.lang));
+  const preferredPatterns = [
+    /google.*español/i,
+    /microsoft.*(alvaro|jorge|pablo|dario|raul|andres)/i,
+    /(alvaro|jorge|pablo|dario|raul|andres)/i,
+  ];
+
+  for (const pattern of preferredPatterns) {
+    const match = spanishVoices.find((voice) => pattern.test(`${voice.name} ${voice.voiceURI}`));
+    if (match) return match;
+  }
+
+  return spanishVoices.find((voice) => voice.localService) || spanishVoices[0] || null;
+}
+
+function playFinalDialogueLine() {
+  const quote = $('.ultimate-final-quote');
+  gsap.to(quote, { opacity: 1, y: 0, scale: 1, duration: 1.05, ease: 'power3.out' });
+  fadeAudio(music, muted ? 0 : .07, .65);
+
+  return new Promise((resolve) => {
+    let completed = false;
+    const complete = () => {
+      if (completed) return;
+      completed = true;
+      finalUtterance = null;
+      fadeAudio(music, muted ? 0 : .26, 1.6);
+      resolve();
+    };
+
+    if (muted || !('speechSynthesis' in window)) {
+      setTimeout(complete, 3300);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    finalUtterance = new SpeechSynthesisUtterance(FINAL_DIALOGUE_LINE);
+    finalUtterance.lang = 'es-ES';
+    finalUtterance.rate = .82;
+    finalUtterance.pitch = .78;
+    finalUtterance.volume = 1;
+
+    const voice = getPreferredSpanishVoice();
+    if (voice) finalUtterance.voice = voice;
+
+    finalUtterance.onend = complete;
+    finalUtterance.onerror = complete;
+    window.speechSynthesis.speak(finalUtterance);
+
+    setTimeout(complete, 8000);
+  });
+}
+
 function buildTimeline() {
   if (cinematicTimeline) return cinematicTimeline;
 
@@ -194,6 +259,7 @@ function buildTimeline() {
   const hero = $('.ultimate-hero', scene);
   const name = $('.ultimate-name', scene);
   const finale = $('.ultimate-finale', scene);
+  const finalQuote = $('.ultimate-final-quote', scene);
 
   const reveal = (target, at, hold = 3.2) => {
     cinematicTimeline
@@ -240,6 +306,7 @@ function buildTimeline() {
     .to(jungle, { opacity: .2, duration: 4 }, 45)
     .to(finale, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 3.2, ease: 'back.out(1.25)' }, 48.2)
     .to(finale, { scale: 1.025, duration: 6, ease: 'sine.inOut' }, 52)
+    .to(finalQuote, { opacity: 1, y: 0, scale: 1, duration: 1.4, ease: 'power3.out' }, 54)
     .to(rays, { opacity: .85, rotation: 4, duration: 8, ease: 'none' }, 49);
 
   const clock = {};
@@ -255,16 +322,19 @@ function syncTimeline() {
   }
 }
 
-function finishCinematic() {
+async function finishCinematic() {
+  if (finishing) return;
+  finishing = true;
   cancelAnimationFrame(animationFrame);
   cinematicTimeline?.time(DIALOGUE_DURATION, false);
-  fadeAudio(music, muted ? 0 : .26, 2.5);
+
+  await playFinalDialogueLine();
 
   setTimeout(() => {
     document.body.classList.remove('cinematic-playing');
     const invitation = $('[data-scene="invitation"]');
     invitation?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 1800);
+  }, 1300);
 }
 
 async function startExperience(event) {
@@ -273,6 +343,7 @@ async function startExperience(event) {
   if (started) return;
 
   started = true;
+  finishing = false;
   prepareAudio();
   buildTimeline();
 
@@ -307,7 +378,9 @@ function handleAudioFailure() {
   cancelAnimationFrame(animationFrame);
   dialogue?.pause();
   music?.pause();
+  window.speechSynthesis?.cancel();
   started = false;
+  finishing = false;
   document.body.classList.remove('cinematic-playing');
   $('#gate')?.classList.remove('is-open');
   const button = $('#startButton');
@@ -326,6 +399,7 @@ function bindControls() {
     muted = !muted;
     if (dialogue) dialogue.muted = muted;
     if (music) music.muted = muted;
+    if (muted && window.speechSynthesis?.speaking) window.speechSynthesis.cancel();
     setTimeout(() => {
       if (soundToggle) soundToggle.textContent = muted ? '🔇' : '🔊';
     }, 0);
@@ -342,5 +416,6 @@ window.addEventListener('beforeunload', () => {
   cancelAnimationFrame(animationFrame);
   dialogue?.pause();
   music?.pause();
+  window.speechSynthesis?.cancel();
   releaseDialogueUrl();
 });
